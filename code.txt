@@ -1,0 +1,37 @@
+
+
+from ultralytics import YOLO
+import cv2
+import json
+
+# Load trained model (path to your weights file)
+model = YOLO("best.pt")
+
+# Load screenshot
+image_path = "three.png"   # change to your file
+results = model.predict(source=image_path, conf=0.5)
+
+# Parse results into JSON
+output = []
+for result in results:
+    boxes = result.boxes.xyxy.cpu().numpy()   # x_min, y_min, x_max, y_max
+    classes = result.boxes.cls.cpu().numpy()
+    scores = result.boxes.conf.cpu().numpy()
+
+    for box, cls, score in zip(boxes, classes, scores):
+        x_min, y_min, x_max, y_max = map(int, box)
+        width = x_max - x_min
+        height = y_max - y_min
+        output.append({
+            "class": model.names[int(cls)],   # e.g., "button"
+            "confidence": float(score),
+            "bbox": [x_min, y_min, x_max, y_max],
+            "width": width,
+            "height": height
+        })
+
+# Save as JSON
+with open("three.json", "w") as f:
+    json.dump(output, f, indent=2)
+
+print("Detection results saved to ui_elements.json")
